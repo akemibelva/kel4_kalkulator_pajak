@@ -1,16 +1,15 @@
 # kalkulator_pajak
 
-A new Flutter project.
+Fitur Utama
+1. Perhitungan pajak penghasilan (PPh) berdasarkan pendapatan.
+2. Simulasi pajak untuk usaha atau bisnis kecil.
+3. Fitur kalkulasi pajak tambahan (PBB, PPn, dll.).
+4. Riwayat perhitungan pajak untuk keperluan arsip.
+5. Panduan dan tips perpajakan sesuai aturan terbaru.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Setelah mengunduh zip file, jalankan sesuai alurnya:
+1. Lakukan registrasi
+2. Lakukan login
+3. Mengakses melalui menu atau memencet opsi yang terdapat pada halaman utama untuk mengakses fitur kalkulator
