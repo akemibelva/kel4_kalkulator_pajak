@@ -20,7 +20,7 @@ class _PphCalculatorState extends State<PphCalculator> {
   final TextEditingController _salaryController = TextEditingController();
 
   // State untuk status PTKP yang dipilih
-  String _ptkpStatus = 'TK/0';
+  String _ptkpStatus = 'Tk/0';
 
   // State untuk menyimpan hasil perhitungan dan rumus
   double _calculatedTax = 0.0;
@@ -28,7 +28,7 @@ class _PphCalculatorState extends State<PphCalculator> {
 
   // Daftar status PTKP yang tersedia untuk Dropdown
   final List<String> _ptkpOptions = [
-    'TK/0', 'TK/1', 'TK/2', 'TK/3',
+    'Tk/0', 'Tk/1', 'Tk/2', 'Tk/3',
     'K/0', 'K/1', 'K/2', 'K/3',
   ];
 
