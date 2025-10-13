@@ -2,9 +2,6 @@
 Aplikasi yang membantu pengguna menghitung pajak pribadi atau bisnis berdasarkan aturan perpajakan yang berlaku.
 
 ## Ketentuan Fitur
-Fitur Terutama
-1. Perhitungan pajak penghasilan (PPh) berdasarkan pendapatan pengguna.
-
 Fitur Utama (wajib)
 1. Perhitungan pajak penghasilan (PPh) berdasarkan pendapatan.
 2. Simulasi pajak untuk usaha atau bisnis kecil.
