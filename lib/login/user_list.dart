@@ -1,4 +1,4 @@
-import 'package:kalkulator_pajak/model/user.dart'; // Import model data User
+import 'package:kalkulator_pajak/model/user_database.dart'; // Import model data User
 
 // Kelas ini mensimulasikan database atau service API untuk manajemen pengguna (Login/Register).
 // Data disimpan secara statis dalam memori.

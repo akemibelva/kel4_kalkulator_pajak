@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:ui'; // Diperlukan untuk ImageFilter.blur
-import 'user_list.dart'; // Asumsi: Kelas untuk menyimpan data user dan logika login
+import 'dart:ui'; // Untuk efek blur (Glassmorphism)
+import 'package:kalkulator_pajak/service/user_service.dart'; // 🔹 Koneksi ke Hive untuk login
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -10,105 +10,121 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // Controllers untuk mengambil input dari TextField
+  // --- Controller untuk menangkap input dari TextField ---
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // State untuk mengontrol tampilan loading dan visibilitas password
+  // --- State untuk loading dan toggle password visibility ---
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  @override
+  void dispose() {
+    // Membersihkan controller agar tidak ada kebocoran memori
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
-  // --- Logika Penanganan Login ---
+  // --- 🔹 Logika Proses Login ke Hive (via AuthService) ---
   void _handleLogin() async {
-    // Aktifkan loading saat proses dimulai
     setState(() {
-      _isLoading = true;
+      _isLoading = true; // Aktifkan indikator loading
     });
 
-    // Panggil fungsi login dari UserList
-    final success = await UserList.login(
-      _usernameController.text,
-      _passwordController.text,
-    );
+    // Ambil nilai input dari form
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
 
-    // Nonaktifkan loading setelah proses selesai
+    // 🔸 Gunakan AuthService untuk login user dari database Hive
+    final success = AuthService.loginUser(username, password);
+
     setState(() {
-      _isLoading = false;
+      _isLoading = false; // Matikan indikator loading setelah proses selesai
     });
 
     if (success) {
-      // Jika berhasil, navigasi ke halaman home dan hapus riwayat navigasi sebelumnya
-      Navigator.of(context).pushReplacementNamed('/home', arguments: _usernameController.text);
-    } else {
-      // Jika gagal, tampilkan Snackbar
+      // ✅ Jika login berhasil
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login Gagal. Cek username dan password.')),
+        const SnackBar(
+          content: Text('Login berhasil!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Navigasi ke halaman home dan hapus riwayat sebelumnya
+      Navigator.of(context).pushReplacementNamed(
+        '/home',
+        arguments: username, // Kirim nama user ke halaman berikutnya
+      );
+    } else {
+      // ❌ Jika login gagal (username atau password salah)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login gagal. Periksa username dan password.'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
-  // --- Akhir Logika Login ---
 
-
-  // --- Fungsi Pembantu untuk Dekorasi Input (Glassmorphism style) ---
+  // --- Fungsi dekorasi input field (gaya glassmorphism) ---
   InputDecoration _buildInputDecoration(String label, IconData icon) {
     return InputDecoration(
       hintText: label,
       hintStyle: const TextStyle(color: Colors.white54),
       prefixIcon: Icon(icon, color: Colors.white70),
-      // Border saat tidak fokus
       enabledBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
         borderRadius: BorderRadius.circular(10),
       ),
-      // Border saat fokus
-      focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.white),
-        borderRadius: BorderRadius.circular(10),
+      focusedBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.white),
+        borderRadius: BorderRadius.all(Radius.circular(10)),
       ),
-      // Latar belakang input transparan
-      fillColor: Colors.black.withOpacity(0.2),
+      fillColor: Colors.black.withOpacity(0.2), // Transparan gelap
       filled: true,
-      contentPadding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0),
+      contentPadding:
+      const EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // BODY dengan beberapa lapisan visual
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. BACKGROUND IMAGE
+          // 1️⃣ Latar belakang gambar penuh
           Image.asset(
-            'image/bs2.jpg', // GANTI DENGAN PATH ASSET GAMBAR ANDA
+            'image/bs2.jpg', // Pastikan path sesuai dengan folder project kamu
             fit: BoxFit.cover,
           ),
 
-          // 2. TINT OVERLAY (Lapisan warna gelap agar teks putih lebih kontras)
-          Container(
-            color: Colors.black.withOpacity(0.5),
-          ),
+          // 2️⃣ Overlay gelap agar teks lebih kontras
+          Container(color: Colors.black.withOpacity(0.5)),
 
-          // 3. KOTAK LOGIN DENGAN BLUR EFFECT (Glassmorphism)
+          // 3️⃣ Kotak login dengan efek blur (Glassmorphism)
           Center(
-            child: ClipRRect( // Memotong konten agar border radius berlaku untuk blur
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter( // Widget utama yang menciptakan efek BLUR
-                filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0), // Efek blur
                 child: Container(
                   width: 350,
                   padding: const EdgeInsets.all(30),
-                  // Dekorasi kotak transparan
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.5), // Warna latar belakang transparan
+                    color: Colors.white.withOpacity(0.5), // Transparan putih
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.black.withOpacity(0.3)),
                   ),
+
+                  // --- Form Login ---
                   child: Column(
-                    mainAxisSize: MainAxisSize.min, // Menggunakan ruang minimum yang diperlukan
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Judul
+                      // 🔹 Judul form
                       const Text(
                         'Login',
                         style: TextStyle(
@@ -119,67 +135,75 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 30),
 
-                      // Input Email/Username
+                      // --- Input Username ---
                       TextField(
                         controller: _usernameController,
                         style: const TextStyle(color: Colors.white),
-                        decoration: _buildInputDecoration(
-                            'Username', Icons.person),
+                        decoration: _buildInputDecoration('Username', Icons.person),
                       ),
                       const SizedBox(height: 20),
 
-                      // Input Password
+                      // --- Input Password ---
                       TextField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword, // State untuk menyembunyikan teks
-                          style: const TextStyle(color: Colors.white),
-                          // Menambahkan ikon visibility ke InputDecoration
-                          decoration: _buildInputDecoration(
-                              'Password', Icons.lock).copyWith(suffixIcon: IconButton(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword, // Sembunyikan teks password
+                        style: const TextStyle(color: Colors.white),
+                        decoration: _buildInputDecoration('Password', Icons.lock)
+                            .copyWith(
+                          suffixIcon: IconButton(
                             icon: Icon(
-                              // Mengganti ikon berdasarkan state _obscurePassword
-                              _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                              // Ganti ikon sesuai status sembunyikan password
+                              _obscurePassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
                               color: Colors.white70,
                             ),
                             onPressed: () {
-                              // Mengubah state visibilitas password
+                              // Toggle tampilkan/sembunyikan password
                               setState(() {
                                 _obscurePassword = !_obscurePassword;
                               });
                             },
                           ),
-                          )
-
+                        ),
                       ),
-
                       const SizedBox(height: 30),
 
-                      // Tombol Login
+                      // --- Tombol Login ---
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _handleLogin, // Nonaktifkan tombol saat loading
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF001845), // Warna tombol gelap
+                            backgroundColor: const Color(0xFF001845),
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           child: _isLoading
-                          // Tampilkan indikator loading jika _isLoading true
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          // Tampilkan teks 'Login' jika _isLoading false
-                              : const Text('Login', style: TextStyle(fontSize: 18, color: Colors.white)),
+                          // 🔹 Jika sedang loading, tampilkan spinner
+                              ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2),
+                          )
+                          // 🔹 Jika tidak loading, tampilkan teks
+                              : const Text(
+                            'Login',
+                            style: TextStyle(
+                                fontSize: 18, color: Colors.white),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
 
-                      // Navigasi ke Register
+                      // --- Tombol ke halaman Register ---
                       TextButton(
                         onPressed: () => Navigator.of(context).pushNamed('/register'),
                         child: const Text(
-                          "Don't have an account? Register",
+                          "Belum punya akun? Daftar di sini",
                           style: TextStyle(color: Colors.white70),
                         ),
                       ),

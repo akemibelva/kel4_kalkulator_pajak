@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
-import 'package:intl/intl.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 // Import Halaman-halaman Kalkulator
 import 'calculation/pbb.dart';
 import 'calculation/pph.dart';
@@ -18,9 +18,20 @@ import 'rules.dart';
 import 'calculation/history.dart';
 // Import Model
 import 'package:kalkulator_pajak/model/hasil_tax.dart'; // TaxResult
+import 'package:kalkulator_pajak/model/user_database.dart';
+//import service
+import 'service/user_service.dart';
 
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Pastikan Flutter siap sebelum async
+  await AuthService.init(); // Inisialisasi Hive (database lokal)
+  Hive.registerAdapter(UserAdapter()); // Daftarkan adapter untuk User
+
+  // Buka semua box Hive sebelum menjalankan app
+  await Hive.openBox<User>('user_box'); // Box untuk data user
+  await Hive.openBox('app_settings_box'); // Box untuk data setting
+
   // Memastikan semua widget sudah diinisialisasi sebelum menjalankan aplikasi (penting untuk async tasks)
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());

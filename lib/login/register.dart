@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:ui'; // Diperlukan untuk ImageFilter.blur (Efek Glassmorphism)
-import 'user_list.dart'; // Asumsi: Kelas untuk menyimpan data user dan logika registrasi
+import 'dart:ui'; // Untuk efek blur (glassmorphism)
+import 'package:kalkulator_pajak/service/user_service.dart'; // 🔹 Import AuthService untuk koneksi Hive (database lokal)
 
 class Register extends StatefulWidget {
   const Register({super.key});
@@ -10,73 +10,78 @@ class Register extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<Register> {
-  // State untuk visibilitas password
-  bool _passwordObscure = true;
-  bool _confirmObscure = true;
-  bool _isLoading = false; // State untuk tampilan loading saat submit
+  // --- STATE UTAMA ---
+  bool _passwordObscure = true; // Untuk menyembunyikan / menampilkan teks password
+  bool _confirmObscure = true; // Untuk konfirmasi password
+  bool _isLoading = false; // Untuk menampilkan indikator loading saat proses submit
 
-  // Global Key untuk Form (Diperlukan untuk validasi form)
-  final _formKey = GlobalKey<FormState>();
-
-  // Controllers untuk mengambil input teks
-  final _username = TextEditingController();
-  final _password = TextEditingController();
-  final _confirmPassword = TextEditingController(); // Controller konfirmasi password
+  // --- FORM & CONTROLLERS ---
+  final _formKey = GlobalKey<FormState>(); // Key untuk validasi form
+  final _username = TextEditingController(); // Controller input username
+  final _password = TextEditingController(); // Controller input password
+  final _confirmPassword = TextEditingController(); // Controller input konfirmasi password
 
   @override
   void dispose() {
-    // Penting: Membuang controllers saat widget dihancurkan
+    // Membersihkan controller agar tidak terjadi memory leak
     _username.dispose();
     _password.dispose();
     _confirmPassword.dispose();
     super.dispose();
   }
 
-  // --- Fungsi Validator ---
+  // --- VALIDATOR FUNGSI ---
+  // Validator wajib diisi
   String? _required(String? v) =>
-      (v == null || v.trim().isEmpty) ? 'Wajib Diisi' : null;
+      (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null;
 
+  // Validator untuk memastikan password dan konfirmasi password cocok
   String? _passwordMatchValidator(String? v) {
-    if (v == null || v.isEmpty) return 'Konfirmasi Password wajib diisi';
-    // Membandingkan input konfirmasi dengan nilai di _password controller
+    if (v == null || v.isEmpty) return 'Konfirmasi password wajib diisi';
     if (v != _password.text) return 'Password tidak cocok';
     return null;
   }
-  // --- Akhir Fungsi Validator ---
 
-  // --- Logika Submit Registrasi ---
+  // --- 🔹 FUNGSI REGISTER USER KE DATABASE HIVE ---
   void _submit() async {
-    // 1. Memvalidasi semua field form
+    // Jalankan validasi semua field
     if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+      setState(() => _isLoading = true); // Tampilkan loading
 
-      final username = _username.text.trim();
+      final username = _username.text.trim(); // Hapus spasi di depan/belakang
       final password = _password.text;
 
-      // 2. Panggil fungsi registrasi dari UserList
-      final success = await UserList.register(username, password);
+      // 🔸 Panggil AuthService untuk registrasi ke database Hive
+      final success = await AuthService.registerUser(username, password);
 
+      // Setelah registrasi selesai, pastikan widget masih aktif (mounted)
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isLoading = false); // Matikan loading spinner
 
         if (success) {
-          // 3. Registrasi Berhasil: Tampilkan notifikasi dan kembali ke halaman Login
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Registrasi Berhasil! Silakan masuk (Login).')));
-          Navigator.of(context).pop();
-        } else {
-          // 4. Registrasi Gagal: Username sudah ada
+          // ✅ Registrasi berhasil
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-                content: Text('Registrasi Gagal. Username sudah digunakan.')),
+              content: Text('Registrasi berhasil! Silakan login.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          Navigator.of(context).pop(); // Kembali ke halaman login
+        } else {
+          // ❌ Registrasi gagal (username sudah digunakan)
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Username sudah digunakan, coba yang lain.'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
     }
   }
-  // --- Akhir Logika Submit ---
 
-  // --- Fungsi Pembantu untuk Dekorasi Input (Glassmorphism style) ---
+  // --- DEKORASI INPUT DENGAN GAYA GLASSMORPHISM ---
   InputDecoration _buildInputDecoration(String label, IconData icon) {
     return InputDecoration(
       hintText: label,
@@ -86,11 +91,11 @@ class _RegisterPageState extends State<Register> {
         borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
         borderRadius: BorderRadius.circular(10),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.white),
-        borderRadius: BorderRadius.circular(10),
+      focusedBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.white),
+        borderRadius: BorderRadius.all(Radius.circular(10)),
       ),
-      fillColor: Colors.black.withOpacity(0.2), // Latar belakang input transparan
+      fillColor: Colors.black.withOpacity(0.2), // Transparan gelap
       filled: true,
       contentPadding:
       const EdgeInsets.symmetric(vertical: 15.0, horizontal: 10.0),
@@ -99,53 +104,51 @@ class _RegisterPageState extends State<Register> {
 
   @override
   Widget build(BuildContext context) {
-    // === STRUKTUR GLASSMORPHISM ===
     return Scaffold(
-      // Memungkinkan body (background image) meluas ke area App Bar (untuk AppBar transparan)
+      // Membuat AppBar transparan agar menyatu dengan background image
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Registrasi Akun', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent, // App Bar diatur transparan
-        elevation: 0, // Menghilangkan shadow
-        iconTheme: const IconThemeData(color: Colors.white), // Tombol kembali berwarna putih
+        backgroundColor: Colors.transparent, // Transparan
+        elevation: 0, // Tanpa bayangan
+        iconTheme: const IconThemeData(color: Colors.white), // Tombol back putih
       ),
+
+      // BODY dengan lapisan-lapisan visual
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. BACKGROUND IMAGE
-          Image.asset(
-            'image/bs2.jpg',
-            fit: BoxFit.cover,
-          ),
+          // 1️⃣ Background Image
+          Image.asset('image/bs2.jpg', fit: BoxFit.cover),
 
-          // 2. TINT OVERLAY (Lapisan gelap untuk kontras)
-          Container(
-            color: Colors.black.withOpacity(0.5),
-          ),
+          // 2️⃣ Lapisan hitam transparan untuk membuat teks lebih jelas
+          Container(color: Colors.black.withOpacity(0.5)),
 
-          // 3. KOTAK REGISTER DENGAN BLUR EFFECT
+          // 3️⃣ Form registrasi dengan efek blur (Glassmorphism)
           Center(
-            child: SingleChildScrollView( // Memastikan form dapat digulir jika keyboard muncul
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
-              child: ClipRRect( // Memastikan blur dan border radius rapi
+              child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0), // Efek Blur
+                  filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0), // Efek blur
                   child: Container(
                     width: 350,
                     padding: const EdgeInsets.all(30),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5), // Kotak transparan
+                      color: Colors.white.withOpacity(0.5), // Transparan putih
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: Colors.black.withOpacity(0.3)),
                     ),
-                    child: Form( // Membungkus input dengan Form untuk validasi
+
+                    // --- FORM REGISTRASI ---
+                    child: Form(
                       key: _formKey,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Judul
+                          // 🔹 Judul Form
                           const Text(
                             'Daftar Akun Baru',
                             textAlign: TextAlign.center,
@@ -163,10 +166,9 @@ class _RegisterPageState extends State<Register> {
                             style: const TextStyle(color: Colors.white),
                             decoration:
                             _buildInputDecoration('Username', Icons.person),
-                            validator: _required, // Validator wajib diisi
+                            validator: _required,
                             textInputAction: TextInputAction.next,
                           ),
-
                           const SizedBox(height: 15),
 
                           // --- Input Password ---
@@ -175,25 +177,25 @@ class _RegisterPageState extends State<Register> {
                             style: const TextStyle(color: Colors.white),
                             decoration: _buildInputDecoration(
                                 'Password', Icons.lock).copyWith(
-                              suffixIcon: IconButton( // Tombol toggle visibility
+                              suffixIcon: IconButton(
                                 icon: Icon(
                                   _passwordObscure
-                                      ? Icons.visibility
-                                      : Icons.visibility_off,
+                                      ? Icons.visibility // 👁️ Tampilkan password
+                                      : Icons.visibility_off, // 🚫 Sembunyikan
                                   color: Colors.white70,
                                 ),
                                 onPressed: () => setState(
-                                        () => _passwordObscure = !_passwordObscure),
+                                      () => _passwordObscure = !_passwordObscure,
+                                ),
                               ),
                             ),
                             obscureText: _passwordObscure,
-                            validator: (v) => (v == null || v.length < 6) // Minimal 6 karakter
+                            validator: (v) =>
+                            (v == null || v.length < 6)
                                 ? 'Password minimal 6 karakter'
                                 : null,
                             textInputAction: TextInputAction.next,
-                            keyboardType: TextInputType.visiblePassword,
                           ),
-
                           const SizedBox(height: 15),
 
                           // --- Input Konfirmasi Password ---
@@ -210,33 +212,35 @@ class _RegisterPageState extends State<Register> {
                                   color: Colors.white70,
                                 ),
                                 onPressed: () => setState(
-                                        () => _confirmObscure = !_confirmObscure),
+                                      () => _confirmObscure = !_confirmObscure,
+                                ),
                               ),
                             ),
                             obscureText: _confirmObscure,
-                            validator: _passwordMatchValidator, // Validator harus cocok
+                            validator: _passwordMatchValidator,
                             textInputAction: TextInputAction.done,
-                            keyboardType: TextInputType.visiblePassword,
                           ),
-
                           const SizedBox(height: 30),
 
                           // --- Tombol Daftar ---
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: _isLoading ? null : _submit, // Nonaktif saat loading
+                              // Nonaktifkan tombol saat loading
+                              onPressed: _isLoading ? null : _submit,
                               icon: _isLoading
-                                  ? const SizedBox( // Tampilkan loading spinner
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white))
+                                  ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
                                   : const Icon(Icons.check, color: Colors.white),
                               label: Text(
-                                  _isLoading ? 'Mendaftarkan...' : 'Daftar',
-                                  style: const TextStyle(
-                                      fontSize: 18, color: Colors.white)),
+                                _isLoading ? 'Mendaftarkan...' : 'Daftar',
+                                style: const TextStyle(
+                                    fontSize: 18, color: Colors.white),
+                              ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF001845),
                                 padding:
@@ -246,10 +250,11 @@ class _RegisterPageState extends State<Register> {
                                 ),
                               ),
                             ),
-                          )
+                          ),
                         ],
                       ),
                     ),
+                    // --- AKHIR FORM REGISTRASI ---
                   ),
                 ),
               ),
