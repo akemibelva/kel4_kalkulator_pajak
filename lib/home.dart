@@ -4,6 +4,11 @@ import 'package:kalkulator_pajak/model/news_api_model.dart';
 import 'package:kalkulator_pajak/service/news_service.dart';
 import 'package:kalkulator_pajak/model/weather_api_model.dart';
 import 'package:kalkulator_pajak/service/weather_service.dart';
+import 'package:kalkulator_pajak/model/forecast_api_model.dart';
+
+// Asumsi model Forecast sudah di-import melalui weather_api_model.dart
+// import 'package:kalkulator_pajak/model/forecast_api_model.dart';
+// Jika model Forecast ada di file terpisah, pastikan sudah diimport.
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -23,6 +28,12 @@ class _HomePageState extends State<HomePage> {
           iconCode: '01d',
           windSpeed: 0,
           humidity: 0));
+
+  // =========================================================
+  // 1. TAMBAH FUTURE UNTUK PRAKIRAAN CUACA
+  // =========================================================
+  Future<List<Forecast>> _futureForecast = Future.value([]);
+
 
   // Kota default untuk fetching cuaca
   final String _defaultCity = 'Jakarta';
@@ -48,9 +59,10 @@ class _HomePageState extends State<HomePage> {
 
   void _fetchAllData() {
     setState(() {
-      // 1. Fetch Cuaca
-      // Menggunakan nama kota default: Jakarta
+      // 1. Fetch Cuaca & Forecast
       _futureWeather = WeatherService.fetchWeatherIndonesia(_defaultCity);
+      // Panggil juga fetch prakiraan
+      _futureForecast = WeatherService.fetchWeatherForecast(_defaultCity);
 
       // 2. Fetch Berita (default Indonesia)
       _futureNews = NewsService.fetchIndonesianNews();
@@ -116,34 +128,37 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    @override
-    void initState() {
-      super.initState();
+    // Pastikan kode initState tidak terulang. Hapus initState ganda.
+    // Kode asli yang benar harus seperti ini:
 
-      // 🔹 Ambil berita (default Indonesia)
-      _futureNews = NewsService.fetchIndonesianNews();
+    // 🔹 Ambil prakiraan cuaca
+    // ASUMSI: WeatherService memiliki method fetchWeatherForecast(city)
+    // dan model Forecast sudah tersedia/diimpor.
+    _futureForecast = WeatherService.fetchWeatherForecast(_defaultCity); // 👈 TAMBAH: Fetch Forecast
 
-      // --- Logika Auto-Scroll untuk Big Card ---
-      Future.delayed(Duration.zero, () {
-        if (mounted) {
-          Timer.periodic(const Duration(seconds: 3), (Timer timer) {
-            if (_currentPage < 3) {
-              _currentPage++;
-            } else {
-              _currentPage = 0;
-            }
+    // 🔹 Ambil berita (default Indonesia)
+    _futureNews = NewsService.fetchIndonesianNews();
 
-            if (_pageController.hasClients) {
-              _pageController.animateToPage(
-                _currentPage,
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeInOut,
-              );
-            }
-          });
-        }
-      });
-    }
+    // --- Logika Auto-Scroll untuk Big Card ---
+    Future.delayed(Duration.zero, () {
+      if (mounted) {
+        Timer.periodic(const Duration(seconds: 3), (Timer timer) {
+          if (_currentPage < 3) {
+            _currentPage++;
+          } else {
+            _currentPage = 0;
+          }
+
+          if (_pageController.hasClients) {
+            _pageController.animateToPage(
+              _currentPage,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
+            );
+          }
+        });
+      }
+    });
   }
 
   @override
@@ -152,6 +167,7 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Color(0xFFe2eafc), // Warna latar belakang terang
 
       // --- DRAWER (Menu Samping) ---
+      // ... (Kode Drawer tidak berubah)
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -239,6 +255,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 20),
 
                   // --- Autocomplete Search Bar ---
+                  // ... (Kode Autocomplete Search Bar tidak berubah)
                   Autocomplete<String>(
                     optionsBuilder: (TextEditingValue textEditingValue) {
                       if (textEditingValue.text.isEmpty) {
@@ -323,7 +340,15 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 30,),
 
+                  // --- Kartu Cuaca Utama ---
                   buildWeatherCard(),
+
+                  const SizedBox(height: 15,), // Jarak diperkecil
+
+                  // =========================================================
+                  // 4. PANGGIL WIDGET PRAKIRAAN HORIZONTAL
+                  // =========================================================
+                  buildHorizontalForecast(),
 
                   const SizedBox(height: 20,),
 
@@ -334,6 +359,7 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   // FutureBuilder untuk menampilkan berita
+                  // ... (Kode Berita tidak berubah)
                   FutureBuilder<List<News>>(
                     future: _futureNews,
                     builder: (context, snapshot) {
@@ -370,7 +396,7 @@ class _HomePageState extends State<HomePage> {
 
                                 // Klik untuk buka halaman detail berita
                                 onTap: () {
-                                      Navigator.pushNamed(context, '/news_detail', arguments: news);
+                                  Navigator.pushNamed(context, '/news_detail', arguments: news);
                                 },
                               ),
                             );
@@ -395,6 +421,7 @@ class _HomePageState extends State<HomePage> {
 
 
                   // --- Grid Menu Kalkulasi ---
+                  // ... (Kode Grid Menu Kalkulasi tidak berubah)
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(), // Non-scrollable
@@ -425,6 +452,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ===== Custom Big Card (Untuk Carousel/Slider) =====
+  // ... (Kode buildBigCard tidak berubah)
   Widget buildBigCard(List<String> imagePaths) {
     return Container(
       height: 230,
@@ -491,6 +519,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ===== Widget Kartu Menu Grid (Stateless) =====
+  // ... (Kode buildMenuCard tidak berubah)
   Widget buildMenuCard(String title, String imagePath, String routeName) {
     return GestureDetector(
       onTap: () {
@@ -559,6 +588,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ===== Widget Item Drawer (Menu Samping) =====
+  // ... (Kode buildDrawerItem tidak berubah)
   Widget buildDrawerItem(String title, String routeName) {
     bool isActive = title == "Home";
 
@@ -713,6 +743,97 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ],
+            ),
+          );
+        }
+
+        // 4. No Data
+        else {
+          return const SizedBox.shrink();
+        }
+      },
+    );
+  }
+
+
+  // =========================================================
+  // 3. TAMBAH WIDGET BARU: buildHorizontalForecast()
+  // =========================================================
+  Widget buildHorizontalForecast() {
+    return FutureBuilder<List<Forecast>>(
+      future: _futureForecast,
+      builder: (context, snapshot) {
+        // 1. Loading State
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // Menggunakan LinearProgressIndicator yang lebih kecil untuk horizontal list
+          return const Center(child: SizedBox(
+            height: 10,
+            child: LinearProgressIndicator(
+              color: Color(0xFF001845),
+            ),
+          ));
+        }
+
+        // 2. Error State
+        else if (snapshot.hasError) {
+          return Text('⚠️ Gagal memuat prakiraan: ${snapshot.error}',
+              style: const TextStyle(color: Color(0xFF001845)));
+        }
+
+        // 3. Data Loaded
+        else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          final forecastList = snapshot.data!;
+          // Ambil 8 item pertama (biasanya mewakili ~24 jam)
+          final relevantForecasts = forecastList.take(8).toList();
+
+          return SizedBox(
+            height: 100, // Tinggi yang sesuai untuk kartu horizontal kecil
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal, // 👈 Kunci untuk horizontal
+              itemCount: relevantForecasts.length,
+              itemBuilder: (context, index) {
+                final forecast = relevantForecasts[index];
+                // Format waktu: hanya jam (misal 01:00)
+                final time = '${forecast.date.toLocal().hour.toString().padLeft(2, '0')}:00';
+
+                // Widget Kartu Prakiraan Tunggal
+                return Container(
+                  width: 65, // Lebar kartu
+                  margin: EdgeInsets.only(right: index == relevantForecasts.length - 1 ? 0 : 10), // Margin kanan kecuali yang terakhir
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3d5a80).withOpacity(0.85), // Warna biru gelap
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      // 1. Waktu
+                      Text(
+                        time,
+                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+
+                      // 2. Ikon Cuaca
+                      Image.network(
+                        'https://openweathermap.org/img/wn/${forecast.iconCode}@2x.png',
+                        width: 35,
+                        height: 35,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.cloud, size: 35, color: Colors.white);
+                        },
+                      ),
+
+                      // 3. Suhu
+                      Text(
+                        '${forecast.temperature.toStringAsFixed(0)}°',
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           );
         }
