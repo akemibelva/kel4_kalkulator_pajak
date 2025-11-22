@@ -37,7 +37,7 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordController.text;
 
     // 🔸 Gunakan AuthService untuk login user dari database Hive
-    final success = AuthService.loginUser(username, password);
+    final success = UserService.loginUser(username, password);
 
     setState(() {
       _isLoading = false; // Matikan indikator loading setelah proses selesai

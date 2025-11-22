@@ -7,6 +7,7 @@ class TaxResult {
   final Map<String, dynamic> inputDetails; // Detail input user (gaji, omzet, NJOP, dll.)
   final double finalResult; // Hasil akhir pajak yang dihitung (dalam Rupiah)
   final String formulaUsed; // Rumus atau langkah-langkah yang digunakan untuk transparansi
+  final String username; //nanti ini akan mengambil dari user_database.dart
 
   // Constructor utama
   TaxResult({
@@ -16,6 +17,7 @@ class TaxResult {
     required this.inputDetails,
     required this.finalResult,
     required this.formulaUsed,
+    required this.username
   });
 
   // --- Factory Constructor: Konversi dari Map ---
@@ -30,6 +32,7 @@ class TaxResult {
       inputDetails: map['inputDetails'] as Map<String, dynamic>,
       finalResult: map['finalResult'] as double,
       formulaUsed: map['formulaUsed'] as String,
+      username: map['username'] as String,
     );
   }
 
@@ -44,6 +47,7 @@ class TaxResult {
       'inputDetails': inputDetails,
       'finalResult': finalResult,
       'formulaUsed': formulaUsed,
+      'username' : username
     };
   }
 }

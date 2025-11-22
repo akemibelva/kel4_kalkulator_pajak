@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui'; // Untuk efek blur (glassmorphism)
-import 'package:kalkulator_pajak/service/user_service.dart'; // 🔹 Import AuthService untuk koneksi Hive (database lokal)
+import 'package:intl/intl.dart'; // Import untuk format tanggal
+import 'package:kalkulator_pajak/service/user_service.dart'; // 🔹 Import AuthService
 
 class Register extends StatefulWidget {
   const Register({super.key});
@@ -11,72 +12,136 @@ class Register extends StatefulWidget {
 
 class _RegisterPageState extends State<Register> {
   // --- STATE UTAMA ---
-  bool _passwordObscure = true; // Untuk menyembunyikan / menampilkan teks password
-  bool _confirmObscure = true; // Untuk konfirmasi password
-  bool _isLoading = false; // Untuk menampilkan indikator loading saat proses submit
+  bool _passwordObscure = true;
+  bool _confirmObscure = true;
+  bool _isLoading = false;
+
+  // 🔽 STATE BARU UNTUK PERSYARATAN UAS 🔽
+  String? _selectedGender; // Radio Button state
+  DateTime? _selectedDate; // Pickers state
+  bool _isAgreed = false; // Checkbox state
+  // 🔼 STATE BARU UNTUK PERSYARATAN UAS 🔼
 
   // --- FORM & CONTROLLERS ---
-  final _formKey = GlobalKey<FormState>(); // Key untuk validasi form
-  final _username = TextEditingController(); // Controller input username
-  final _password = TextEditingController(); // Controller input password
-  final _confirmPassword = TextEditingController(); // Controller input konfirmasi password
+  final _formKey = GlobalKey<FormState>();
+  final _username = TextEditingController();
+  final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
+  final _dateController = TextEditingController(); // Controller untuk menampilkan tanggal
 
   @override
   void dispose() {
-    // Membersihkan controller agar tidak terjadi memory leak
     _username.dispose();
     _password.dispose();
     _confirmPassword.dispose();
+    _dateController.dispose();
     super.dispose();
   }
 
+  // --- 📅 FUNGSI DATE PICKER ---
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF001845),
+              onPrimary: Colors.white,
+              surface: Colors.black54,
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: Colors.black.withOpacity(0.8),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        _dateController.text = DateFormat('dd MMMM yyyy').format(picked);
+      });
+    }
+  }
+
   // --- VALIDATOR FUNGSI ---
-  // Validator wajib diisi
   String? _required(String? v) =>
       (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null;
 
-  // Validator untuk memastikan password dan konfirmasi password cocok
   String? _passwordMatchValidator(String? v) {
     if (v == null || v.isEmpty) return 'Konfirmasi password wajib diisi';
     if (v != _password.text) return 'Password tidak cocok';
     return null;
   }
 
+  // Validator untuk Radio Button dan Date Picker
+  String? _validateRequiredFields() {
+    if (_selectedGender == null) {
+      return 'Jenis kelamin wajib dipilih';
+    }
+    if (_selectedDate == null) {
+      return 'Tanggal lahir wajib diisi';
+    }
+    if (!_isAgreed) {
+      return 'Anda harus menyetujui syarat dan ketentuan';
+    }
+    return null;
+  }
+
   // --- 🔹 FUNGSI REGISTER USER KE DATABASE HIVE ---
   void _submit() async {
-    // Jalankan validasi semua field
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true); // Tampilkan loading
+    // 1. Validasi TextFormField
+    if (!_formKey.currentState!.validate()) return;
 
-      final username = _username.text.trim(); // Hapus spasi di depan/belakang
-      final password = _password.text;
+    // 2. Validasi Radio Button, Picker, dan Checkbox
+    final requiredError = _validateRequiredFields();
+    if (requiredError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(requiredError),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
-      // 🔸 Panggil AuthService untuk registrasi ke database Hive
-      final success = await AuthService.registerUser(username, password);
+    setState(() => _isLoading = true);
 
-      // Setelah registrasi selesai, pastikan widget masih aktif (mounted)
-      if (mounted) {
-        setState(() => _isLoading = false); // Matikan loading spinner
+    final username = _username.text.trim();
+    final password = _password.text;
+    final gender = _selectedGender!; // Dipastikan tidak null oleh validator
+    final dateOfBirth = _selectedDate!; // Dipastikan tidak null oleh validator
 
-        if (success) {
-          // ✅ Registrasi berhasil
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Registrasi berhasil! Silakan login.'),
-              backgroundColor: Colors.green,
-            ),
-          );
+    // 🔸 Panggil AuthService.registerUser dengan 4 parameter baru
+    final success = await UserService.registerUser(
+      username,
+      password,
+      gender,
+      dateOfBirth,
+    );
 
-          Navigator.of(context).pop(); // Kembali ke halaman login
-        } else {
-          // ❌ Registrasi gagal (username sudah digunakan)
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Username sudah digunakan, coba yang lain.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+    if (mounted) {
+      setState(() => _isLoading = false);
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registrasi berhasil! Silakan login.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.of(context).pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Username sudah digunakan, coba yang lain.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -105,38 +170,34 @@ class _RegisterPageState extends State<Register> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Membuat AppBar transparan agar menyatu dengan background image
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Registrasi Akun', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.transparent, // Transparan
-        elevation: 0, // Tanpa bayangan
-        iconTheme: const IconThemeData(color: Colors.white), // Tombol back putih
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-
-      // BODY dengan lapisan-lapisan visual
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1️⃣ Background Image
-          Image.asset('image/bs2.jpg', fit: BoxFit.cover),
-
-          // 2️⃣ Lapisan hitam transparan untuk membuat teks lebih jelas
+          Image.asset('image/bs2.jpg', fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) {
+            // Placeholder jika asset tidak ditemukan
+            return Container(color: Color(0xFF001845), child: Center(child: Text("Background Placeholder", style: TextStyle(color: Colors.white))));
+          }),
           Container(color: Colors.black.withOpacity(0.5)),
 
-          // 3️⃣ Form registrasi dengan efek blur (Glassmorphism)
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0), // Efek blur
+                  filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
                   child: Container(
                     width: 350,
                     padding: const EdgeInsets.all(30),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5), // Transparan putih
+                      color: Colors.white.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: Colors.black.withOpacity(0.3)),
                     ),
@@ -148,7 +209,6 @@ class _RegisterPageState extends State<Register> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // 🔹 Judul Form
                           const Text(
                             'Daftar Akun Baru',
                             textAlign: TextAlign.center,
@@ -180,8 +240,8 @@ class _RegisterPageState extends State<Register> {
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _passwordObscure
-                                      ? Icons.visibility // 👁️ Tampilkan password
-                                      : Icons.visibility_off, // 🚫 Sembunyikan
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
                                   color: Colors.white70,
                                 ),
                                 onPressed: () => setState(
@@ -220,13 +280,87 @@ class _RegisterPageState extends State<Register> {
                             validator: _passwordMatchValidator,
                             textInputAction: TextInputAction.done,
                           ),
-                          const SizedBox(height: 30),
+                          const SizedBox(height: 20),
+
+                          const Text(
+                            'Jenis Kelamin:',
+                            style: TextStyle(color: Colors.white70, fontSize: 16),
+                          ),
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: RadioListTile<String>(
+                                  title: const Text('Pria', style: TextStyle(color: Colors.white)),
+                                  value: 'Pria',
+                                  groupValue: _selectedGender,
+                                  onChanged: (value) {
+                                    setState(() => _selectedGender = value);
+                                  },
+                                  dense: true,
+                                ),
+                              ),
+                              Expanded(
+                                child: RadioListTile<String>(
+                                  title: const Text('Wanita', style: TextStyle(color: Colors.white)),
+                                  value: 'Wanita',
+                                  groupValue: _selectedGender,
+                                  onChanged: (value) {
+                                    setState(() => _selectedGender = value);
+                                  },
+                                  dense: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+
+
+                          TextFormField(
+                            controller: _dateController,
+                            readOnly: true, // Membuat field hanya bisa dipilih (bukan diketik)
+                            style: const TextStyle(color: Colors.white),
+                            decoration: _buildInputDecoration(
+                                'Tanggal Lahir', Icons.calendar_today).copyWith(
+                              suffixIcon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                            ),
+                            onTap: _selectDate, // Memicu Date Picker
+                            // Validasi akan dilakukan di _validateRequiredFields
+                          ),
+                          const SizedBox(height: 10),
+
+                          // 🔽 3. CHECKBOX (Syarat & Ketentuan) - Elemen Wajib UAS 🔽
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: _isAgreed,
+                                onChanged: (bool? newValue) {
+                                  setState(() {
+                                    _isAgreed = newValue!;
+                                  });
+                                },
+                                activeColor: const Color(0xFF001845),
+                                checkColor: Colors.white,
+                              ),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() => _isAgreed = !_isAgreed); // Toggle saat teks diklik
+                                  },
+                                  child: const Text(
+                                    'Saya menyetujui syarat dan ketentuan.',
+                                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                                    maxLines: 2,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
 
                           // --- Tombol Daftar ---
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              // Nonaktifkan tombol saat loading
                               onPressed: _isLoading ? null : _submit,
                               icon: _isLoading
                                   ? const SizedBox(

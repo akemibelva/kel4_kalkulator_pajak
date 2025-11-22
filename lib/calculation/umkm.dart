@@ -3,8 +3,9 @@ import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart'; // Untuk format Rupiah
 import 'package:kalkulator_pajak/model/tax.dart'; // Mengandung TaxLogic (rumus PPh UMKM)
 import 'package:kalkulator_pajak/model/tax_constant_box.dart';
-import 'package:kalkulator_pajak/calculation/save_history.dart'; // Mengandung SaveHistory
+import 'package:kalkulator_pajak/service/save_history.dart'; // Mengandung SaveHistory
 import 'package:kalkulator_pajak/model/hasil_tax.dart';
+import 'package:kalkulator_pajak/service/user_service.dart';
 
 class UmkmSimulasi extends StatefulWidget {
   final TaxResult? initialData;
@@ -59,9 +60,24 @@ class _UmkmSimulasiState extends State<UmkmSimulasi> {
   }
 
   void _calculateAndSave() async {
+
+    // Ambil Username Aktif dan Cek Login
+    final String? currentUsername = UserService.getCurrentUsername();
+
+    // Periksa apakah pengguna sudah login. Jika tidak, proses tidak dapat dilanjutkan.
+    if (currentUsername == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Anda harus login untuk menyimpan riwayat perhitungan.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     // 1. Membersihkan input dan konversi ke double
-    final omzetBulanan = double.tryParse(_omzetController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0.0;
-    final omzetKumulatif = double.tryParse(_cumulativeController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0.0;
+    final omzetBulanan = double.tryParse(_omzetController.text.replaceAll(RegExp(r'\D'), '')) ?? 0.0;
+    final omzetKumulatif = double.tryParse(_cumulativeController.text.replaceAll(RegExp(r'\D'), '')) ?? 0.0;
 
     // Validasi
     if (omzetBulanan <= 0) {
@@ -99,6 +115,7 @@ class _UmkmSimulasiState extends State<UmkmSimulasi> {
       },
       finalResult: result,
       formulaUsed: formula,
+      username: currentUsername,
     );
 
     // 5. Simpan ke riwayat dan perbarui state UI
@@ -223,7 +240,7 @@ class _UmkmSimulasiState extends State<UmkmSimulasi> {
             // --- Tombol Hitung ---
             ElevatedButton(
               // Tombol aktif jika omzet bulanan > 0
-              onPressed: (double.tryParse(_omzetController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0.0) > 0 ? _calculateAndSave : null,
+              onPressed: (double.tryParse(_omzetController.text.replaceAll(RegExp(r'\D'), '')) ?? 0.0) > 0 ? _calculateAndSave : null,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 backgroundColor: const Color(0xFF001845),

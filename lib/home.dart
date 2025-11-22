@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:kalkulator_pajak/model/news_api_model.dart';
+import 'package:kalkulator_pajak/service/news_service.dart';
+import 'package:kalkulator_pajak/model/weather_api_model.dart';
+import 'package:kalkulator_pajak/service/weather_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -9,6 +13,19 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  Future<List<News>> _futureNews = Future.value([]);
+  Future<Weather> _futureWeather = Future.value(
+    // Default value/placeholder sebelum fetching pertama berhasil
+      Weather(
+          cityName: 'N/A',
+          temperature: 0,
+          description: '',
+          iconCode: '01d',
+          windSpeed: 0,
+          humidity: 0));
+
+  // Kota default untuk fetching cuaca
+  final String _defaultCity = 'Jakarta';
   String _usernameFromRoute = 'User'; // State untuk menyimpan nama pengguna yang masuk
   int selectedIndex = 0;
   final PageController _pageController = PageController(); // Controller untuk menggeser kartu
@@ -28,6 +45,22 @@ class _HomePageState extends State<HomePage> {
     {'title': 'UMKM', 'route': '/umkm'},
     {'title': 'Guide & Tips', 'route': '/guide'},
   ];
+
+  void _fetchAllData() {
+    setState(() {
+      // 1. Fetch Cuaca
+      // Menggunakan nama kota default: Jakarta
+      _futureWeather = WeatherService.fetchWeatherIndonesia(_defaultCity);
+
+      // 2. Fetch Berita (default Indonesia)
+      _futureNews = NewsService.fetchIndonesianNews();
+    });
+    // Menampilkan notifikasi bahwa data sedang diperbarui (opsional)
+    ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Memperbarui cuaca dan berita...'),
+            duration: Duration(seconds: 1)));
+  }
 
   @override
   void didChangeDependencies() {
@@ -83,27 +116,34 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    // --- Logika Auto-Scroll untuk Big Card ---
-    Future.delayed(Duration.zero, () {
-      if (mounted) {
-        Timer.periodic(const Duration(seconds: 3), (Timer timer) {
-          // Logika loop halaman
-          if (_currentPage < 3) { // Sesuaikan batas dengan jumlah gambar (4 gambar -> 3 indeks)
-            _currentPage++;
-          } else {
-            _currentPage = 0;
-          }
+    @override
+    void initState() {
+      super.initState();
 
-          if (_pageController.hasClients) {
-            _pageController.animateToPage(
-              _currentPage,
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeInOut,
-            );
-          }
-        });
-      }
-    });
+      // 🔹 Ambil berita (default Indonesia)
+      _futureNews = NewsService.fetchIndonesianNews();
+
+      // --- Logika Auto-Scroll untuk Big Card ---
+      Future.delayed(Duration.zero, () {
+        if (mounted) {
+          Timer.periodic(const Duration(seconds: 3), (Timer timer) {
+            if (_currentPage < 3) {
+              _currentPage++;
+            } else {
+              _currentPage = 0;
+            }
+
+            if (_pageController.hasClients) {
+              _pageController.animateToPage(
+                _currentPage,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOut,
+              );
+            }
+          });
+        }
+      });
+    }
   }
 
   @override
@@ -152,9 +192,18 @@ class _HomePageState extends State<HomePage> {
             },
           ),
         ),
-        title: const Text(''), // Judul kosong
+        title: const Text(''),
         backgroundColor: const Color(0xFF001845),
         foregroundColor: Color(0xFFe2eafc),
+
+        // --- Aksi AppBar: Tombol Refresh ---
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Color(0xFFe2eafc)),
+            onPressed: _fetchAllData, // Panggil fungsi refresh
+            tooltip: 'Refresh Data',
+          ),
+        ],
       ),
 
       body: SafeArea(
@@ -274,6 +323,63 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 30,),
 
+                  buildWeatherCard(),
+
+                  const SizedBox(height: 20,),
+
+                  //News API
+                  const Text(
+                    '📰 Berita Terkini',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+
+                  // FutureBuilder untuk menampilkan berita
+                  FutureBuilder<List<News>>(
+                    future: _futureNews,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Text('⚠️ ${snapshot.error}');
+                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Text('Tidak ada berita ditemukan.');
+                      } else {
+                        final newsList = snapshot.data!;
+                        // Ambil 3 berita teratas
+                        return Column(
+                          children: newsList.take(3).map((news) {
+                            return Card(
+                              color: const Color(0xFF001845),
+                              margin: const EdgeInsets.symmetric(vertical: 6),
+                              child: ListTile(
+                                leading: news.imageLink != null
+                                // Tampilkan gambar berita jika ada
+                                    ? Image.network(
+                                  news.imageLink!,
+                                  width: 60,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(Icons.broken_image, size: 60);
+                                  },
+                                )
+                                // Jika tidak ada gambar
+                                    : const Icon(Icons.article_outlined),
+                                textColor: Colors.white,
+                                title: Text(news.titleNews ?? '(Tanpa Judul)'),
+                                subtitle: Text(news.source),
+
+                                // Klik untuk buka halaman detail berita
+                                onTap: () {
+                                      Navigator.pushNamed(context, '/news_detail', arguments: news);
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
 
                   // --- Judul Grid ---
                   Text(
@@ -484,6 +590,136 @@ class _HomePageState extends State<HomePage> {
         } else {
           // Navigasi ke rute kalkulator lainnya
           Navigator.of(context).pushNamed(routeName);
+        }
+      },
+    );
+  }
+
+  // ===== Widget Kartu Cuaca (Weather Card) =====
+  Widget buildWeatherCard() {
+    return FutureBuilder<Weather>(
+      future: _futureWeather,
+      builder: (context, snapshot) {
+        // 1. Loading State
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: LinearProgressIndicator());
+        }
+
+        // 2. Error State
+        else if (snapshot.hasError) {
+          return Card(
+            color: const Color(0xFFffb5a7),
+            elevation: 2,
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Gagal memuat cuaca: ${snapshot.error}',
+                style: const TextStyle(color: Color(0xFF6d0000)),
+              ),
+            ),
+          );
+        }
+
+        // 3. Data Loaded
+        else if (snapshot.hasData) {
+          final weather = snapshot.data!;
+
+          return Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF3d5a80), // Warna biru tua
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                ),
+              ],
+            ),
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Nama Kota & Suhu
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '📍 ${weather.cityName}',
+                          style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          '${weather.temperature.toStringAsFixed(1)}°C',
+                          style: const TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w300,
+                              color: Colors.white),
+                        ),
+                      ],
+                    ),
+
+                    // Ikon Cuaca
+                    weather.iconUrl.isNotEmpty
+                        ? Image.network(
+                      weather.iconUrl,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(Icons.wb_sunny, size: 60, color: Colors.yellow);
+                      },
+                    )
+                        : const Icon(Icons.wb_sunny, size: 60, color: Colors.yellow),
+                  ],
+                ),
+
+                const SizedBox(height: 15),
+
+                // Detail Cuaca
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Deskripsi
+                    Text(
+                      weather.description.toUpperCase(),
+                      style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.bold
+                      ),
+                    ),
+
+                    // Kelembaban & Angin
+                    Row(
+                      children: [
+                        const Icon(Icons.water_drop, size: 18, color: Colors.lightBlueAccent),
+                        const SizedBox(width: 4),
+                        Text('${weather.humidity}%', style: const TextStyle(color: Colors.white)),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.air, size: 18, color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text('${weather.windSpeed.toStringAsFixed(1)} m/s', style: const TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }
+
+        // 4. No Data
+        else {
+          return const SizedBox.shrink();
         }
       },
     );

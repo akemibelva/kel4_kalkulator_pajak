@@ -6,7 +6,8 @@ import 'package:intl/intl.dart'; // Untuk format Rupiah
 import 'package:kalkulator_pajak/model/tax_constant_box.dart';
 import 'package:kalkulator_pajak/model/hasil_tax.dart';
 import 'package:kalkulator_pajak/model/tax.dart'; // Mengandung TaxLogic (rumus PPh Badan)
-import 'package:kalkulator_pajak/calculation/save_history.dart'; // Mengandung SaveHistory
+import 'package:kalkulator_pajak/service/save_history.dart'; // Mengandung SaveHistory
+import 'package:kalkulator_pajak/service/user_service.dart';
 
 // Asumsi: TaxLogic sudah diupdate dengan PPH_Badan_Terutang dan _omzetBatasFasilitas4_8M
 
@@ -64,10 +65,25 @@ class _Pph2529CalculatorState extends State<Pph2529Calculator> {
   }
 
   void _calculateAndSave() async {
+
+    // Ambil Username Aktif dan Cek Login
+    final String? currentUsername = UserService.getCurrentUsername();
+
+    // Periksa apakah pengguna sudah login. Jika tidak, proses tidak dapat dilanjutkan.
+    if (currentUsername == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Anda harus login untuk menyimpan riwayat perhitungan.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     // 1. Bersihkan input dan konversi ke double
-    final turnover = double.tryParse(_turnoverController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0.0;
-    final income = double.tryParse(_incomeController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0.0;
-    final credit = double.tryParse(_creditController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0.0;
+    final turnover = double.tryParse(_turnoverController.text.replaceAll(RegExp(r'\D'), '')) ?? 0.0;
+    final income = double.tryParse(_incomeController.text.replaceAll(RegExp(r'\D'), '')) ?? 0.0;
+    final credit = double.tryParse(_creditController.text.replaceAll(RegExp(r'\D'), '')) ?? 0.0;
 
     // Validasi input
     if (income <= 0 || turnover <= 0) {
@@ -113,6 +129,7 @@ class _Pph2529CalculatorState extends State<Pph2529Calculator> {
       },
       finalResult: result,
       formulaUsed: formulaText,
+      username: currentUsername,
     );
 
     // 7. Simpan ke riwayat dan perbarui state UI
@@ -127,9 +144,9 @@ class _Pph2529CalculatorState extends State<Pph2529Calculator> {
   @override
   Widget build(BuildContext context) {
     // Ambil data input saat ini untuk menghitung status PPh 29 (kurang/lebih bayar) di UI
-    final income = double.tryParse(_incomeController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0.0;
-    final turnover = double.tryParse(_turnoverController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0.0;
-    final credit = double.tryParse(_creditController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0.0;
+    final income = double.tryParse(_incomeController.text.replaceAll(RegExp(r'\D'), '')) ?? 0.0;
+    final turnover = double.tryParse(_turnoverController.text.replaceAll(RegExp(r'\D'), '')) ?? 0.0;
+    final credit = double.tryParse(_creditController.text.replaceAll(RegExp(r'\D'), '')) ?? 0.0;
 
     // Hitung total PPh terutang tahunan lagi (hanya untuk tampilan di UI)
     final pphTerutangTahunan = TaxLogic.PPH_Badan_Terutang(

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart'; // Untuk format Rupiah
+// Import AuthService untuk mendapatkan username aktif
+import 'package:kalkulator_pajak/service/user_service.dart';
 // Asumsi path import ini benar di proyek Anda
 import 'package:kalkulator_pajak/model/tax_constant_box.dart';
 import 'package:kalkulator_pajak/model/hasil_tax.dart';
 import 'package:kalkulator_pajak/model/tax.dart'; // TaxLogic
-import 'package:kalkulator_pajak/calculation/save_history.dart';
+import 'package:kalkulator_pajak/service/save_history.dart';
 
 class PbbCalculator extends StatefulWidget {
   final TaxResult? initialData;
@@ -56,6 +58,8 @@ class _PbbCalculatorState extends State<PbbCalculator> {
 
       _calculatedTax = data.finalResult;
       _formulaUsed = data.formulaUsed;
+
+      // Catatan: Username tidak perlu diisi ulang ke UI, hanya perlu dimuat saat menyimpan.
     }
   }
 
@@ -68,6 +72,20 @@ class _PbbCalculatorState extends State<PbbCalculator> {
   }
 
   void _calculateAndSave() async {
+    // Dapatkan username pengguna yang sedang login
+    final String? currentUsername = UserService.getCurrentUsername();
+
+    // Periksa apakah pengguna sudah login. Jika tidak, proses tidak dapat dilanjutkan.
+    if (currentUsername == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Anda harus login untuk menyimpan riwayat perhitungan.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     // 1. Membersihkan input (menghapus karakter non-angka) dan mengkonversi ke double
     final njopValue = double.tryParse(_njopController.text.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0.0;
     final njoptkpValue = double.tryParse(_njoptkpController.text.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0.0;
@@ -111,6 +129,7 @@ class _PbbCalculatorState extends State<PbbCalculator> {
       },
       finalResult: result,
       formulaUsed: formula,
+      username: currentUsername,
     );
 
     // 5. Simpan ke riwayat dan perbarui UI

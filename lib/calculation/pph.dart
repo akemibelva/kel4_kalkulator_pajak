@@ -5,7 +5,8 @@ import 'package:intl/intl.dart'; // Digunakan untuk memformat angka menjadi mata
 import 'package:kalkulator_pajak/model/tax_constant_box.dart';
 import 'package:kalkulator_pajak/model/hasil_tax.dart';
 import 'package:kalkulator_pajak/model/tax.dart'; // Mengandung TaxLogic (rumus PPh 21)
-import 'package:kalkulator_pajak/calculation/save_history.dart'; // Mengandung SaveHistory
+import 'package:kalkulator_pajak/service/save_history.dart'; // Mengandung SaveHistory
+import 'package:kalkulator_pajak/service/user_service.dart';
 
 class PphCalculator extends StatefulWidget {
   final TaxResult? initialData;
@@ -57,8 +58,23 @@ class _PphCalculatorState extends State<PphCalculator> {
   }
 
   void _calculateAndSave() async {
+
+    // Ambil Username Aktif dan Cek Login
+    final String? currentUsername = UserService.getCurrentUsername();
+
+    // Periksa apakah pengguna sudah login. Jika tidak, proses tidak dapat dilanjutkan.
+    if (currentUsername == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Anda harus login untuk menyimpan riwayat perhitungan.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     // 1. Bersihkan input dan konversi ke double
-    final salary = double.tryParse(_salaryController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0.0;
+    final salary = double.tryParse(_salaryController.text.replaceAll(RegExp(r'\D'), '')) ?? 0.0;
 
     // Validasi
     if (salary <= 0) {
@@ -88,6 +104,7 @@ class _PphCalculatorState extends State<PphCalculator> {
       inputDetails: {'Gaji Tahunan': salary, 'Status PTKP': _ptkpStatus},
       finalResult: result,
       formulaUsed: formula,
+      username: currentUsername,
     );
 
     // 4. Simpan ke riwayat dan perbarui state UI
@@ -198,7 +215,7 @@ class _PphCalculatorState extends State<PphCalculator> {
 
             // --- Dropdown Status PTKP ---
             DropdownButtonFormField<String>(
-              value: _ptkpStatus,
+              initialValue: _ptkpStatus,
               decoration: const InputDecoration(
                 labelText: 'Status PTKP',
                 border: OutlineInputBorder(),
@@ -242,7 +259,7 @@ class _PphCalculatorState extends State<PphCalculator> {
             // --- Tombol Hitung ---
             ElevatedButton(
               // Tombol aktif jika Gaji > 0
-              onPressed: (double.tryParse(_salaryController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0.0) > 0 ? _calculateAndSave : null,
+              onPressed: (double.tryParse(_salaryController.text.replaceAll(RegExp(r'\D'), '')) ?? 0.0) > 0 ? _calculateAndSave : null,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 backgroundColor: const Color(0xFF001845),

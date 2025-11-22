@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 // Import Halaman-halaman Kalkulator
 import 'calculation/pbb.dart';
 import 'calculation/pph.dart';
@@ -16,23 +17,28 @@ import 'home.dart';
 import 'login/register.dart';
 import 'rules.dart';
 import 'calculation/history.dart';
+import 'detail_screen/news_detail_screen.dart';
 // Import Model
 import 'package:kalkulator_pajak/model/hasil_tax.dart'; // TaxResult
 import 'package:kalkulator_pajak/model/user_database.dart';
+import 'model/news_api_model.dart';
 //import service
 import 'service/user_service.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Pastikan Flutter siap sebelum async
-  await AuthService.init(); // Inisialisasi Hive (database lokal)
-  Hive.registerAdapter(UserAdapter()); // Daftarkan adapter untuk User
+  await UserService.init(); // Inisialisasi Hive (database lokal)
+
 
   // Buka semua box Hive sebelum menjalankan app
   await Hive.openBox<User>('user_box'); // Box untuk data user
   await Hive.openBox('app_settings_box'); // Box untuk data setting
 
-  // Memastikan semua widget sudah diinisialisasi sebelum menjalankan aplikasi (penting untuk async tasks)
+  // Memuat file .env yang berisi variabel lingkungan (environment variables)
+  // Misalnya: API_KEY=xxxxxxxxxx
+  // File .env disimpan di root project.
+  await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
@@ -88,7 +94,7 @@ class MyApp extends StatelessWidget {
 
       // --- 2. Rute Dinamis (Menerima Argumen, khususnya TaxResult dari History) ---
       onGenerateRoute: (settings) {
-        // Map rute kalkulator yang perlu menerima data lama (TaxResult)
+        // Map rute kalkulator
         final calculatorRoutes = {
           '/pph21': (args) => PphCalculator(initialData: args),
           '/ppn': (args) => PpnCalculator(initialData: args),
@@ -99,18 +105,25 @@ class MyApp extends StatelessWidget {
           '/pph2529': (args) => Pph2529Calculator(initialData: args),
         };
 
+        // --- Routing untuk news detail ---
+        if (settings.name == '/news_detail') {
+          final newsData = settings.arguments as News;
+
+          return MaterialPageRoute(
+            builder: (context) => NewsDetailScreen(news: newsData),
+          );
+        }
+
+        // --- Routing kalkulator ---
         if (calculatorRoutes.containsKey(settings.name)) {
-          // Mengambil argumen (diharapkan berupa TaxResult atau null)
           final args = settings.arguments as TaxResult?;
           final builderFunction = calculatorRoutes[settings.name]!;
 
-          // Mengarahkan ke halaman kalkulator dengan argumen (data lama)
           return MaterialPageRoute(
             builder: (context) => builderFunction(args),
           );
         }
 
-        // Jika rute tidak ditemukan di sini, biarkan rute statis (routes:) yang mencarinya.
         return null;
       },
     );

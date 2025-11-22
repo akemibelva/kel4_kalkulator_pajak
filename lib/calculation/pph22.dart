@@ -5,7 +5,8 @@ import 'package:intl/intl.dart'; // Digunakan untuk memformat Rupiah
 import 'package:kalkulator_pajak/model/tax_constant_box.dart';
 import 'package:kalkulator_pajak/model/hasil_tax.dart';
 import 'package:kalkulator_pajak/model/tax.dart'; // Mengandung TaxLogic (rumus PPh 22)
-import 'package:kalkulator_pajak/calculation/save_history.dart'; // Mengandung SaveHistory
+import 'package:kalkulator_pajak/service/save_history.dart'; // Mengandung SaveHistory
+import 'package:kalkulator_pajak/service/user_service.dart';
 
 class Pph22Calculator extends StatefulWidget {
   final TaxResult? initialData;
@@ -72,8 +73,22 @@ class _Pph22CalculatorState extends State<Pph22Calculator> {
   }
 
   void _calculateAndSave() async {
+
+    // Ambil Username Aktif dan Cek Login
+    final String? currentUsername = UserService.getCurrentUsername();
+
+    // Periksa apakah pengguna sudah login. Jika tidak, proses tidak dapat dilanjutkan.
+    if (currentUsername == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Anda harus login untuk menyimpan riwayat perhitungan.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     // Bersihkan input dan konversi ke double
-    final value = double.tryParse(_valueController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0.0;
+    final value = double.tryParse(_valueController.text.replaceAll(RegExp(r'\D'), '')) ?? 0.0;
 
     // Validasi
     if (value <= 0) {
@@ -109,6 +124,7 @@ class _Pph22CalculatorState extends State<Pph22Calculator> {
       },
       finalResult: result,
       formulaUsed: formula,
+      username: currentUsername,
     );
 
     // 4. Simpan ke riwayat dan perbarui state UI
@@ -216,7 +232,7 @@ class _Pph22CalculatorState extends State<Pph22Calculator> {
 
             // --- Dropdown Pilihan Tarif PPh 22 ---
             DropdownButtonFormField<String>(
-              value: _rateDisplay,
+              initialValue: _rateDisplay,
               decoration: const InputDecoration(
                 labelText: 'Jenis Transaksi & Tarif',
                 border: OutlineInputBorder(),
@@ -266,7 +282,7 @@ class _Pph22CalculatorState extends State<Pph22Calculator> {
             // --- Tombol Hitung ---
             ElevatedButton(
               // Tombol aktif jika DPP > 0
-              onPressed: (double.tryParse(_valueController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0.0) > 0 ? _calculateAndSave : null,
+              onPressed: (double.tryParse(_valueController.text.replaceAll(RegExp(r'\D'), '')) ?? 0.0) > 0 ? _calculateAndSave : null,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 backgroundColor: const Color(0xFF001845),
