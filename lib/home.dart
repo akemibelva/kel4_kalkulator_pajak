@@ -131,12 +131,12 @@ class _HomePageState extends State<HomePage> {
     // Pastikan kode initState tidak terulang. Hapus initState ganda.
     // Kode asli yang benar harus seperti ini:
 
-    // 🔹 Ambil prakiraan cuaca
-    // ASUMSI: WeatherService memiliki method fetchWeatherForecast(city)
+    // Ambil prakiraan cuaca
+    // WeatherService memiliki method fetchWeatherForecast(city)
     // dan model Forecast sudah tersedia/diimpor.
     _futureForecast = WeatherService.fetchWeatherForecast(_defaultCity); // 👈 TAMBAH: Fetch Forecast
 
-    // 🔹 Ambil berita (default Indonesia)
+    // Ambil berita (default Indonesia)
     _futureNews = NewsService.fetchIndonesianNews();
 
     // --- Logika Auto-Scroll untuk Big Card ---
@@ -167,7 +167,6 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Color(0xFFe2eafc), // Warna latar belakang terang
 
       // --- DRAWER (Menu Samping) ---
-      // ... (Kode Drawer tidak berubah)
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -192,6 +191,7 @@ class _HomePageState extends State<HomePage> {
             buildDrawerItem("Ppn", '/ppn'),
             buildDrawerItem("PBB", '/pbb'),
             buildDrawerItem("History", '/history'),
+            buildDrawerItem("News", '/news'),
             buildDrawerItem("Guide", '/guide'),
             buildDrawerItem("Logout", '/login'),
           ],
@@ -340,17 +340,9 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 30,),
 
-                  // --- Kartu Cuaca Utama ---
-                  buildWeatherCard(),
+                  buildWeatherSectionCombined(),
 
-                  const SizedBox(height: 15,), // Jarak diperkecil
-
-                  // =========================================================
-                  // 4. PANGGIL WIDGET PRAKIRAAN HORIZONTAL
-                  // =========================================================
-                  buildHorizontalForecast(),
-
-                  const SizedBox(height: 20,),
+                  const SizedBox(height: 10,),
 
                   //News API
                   const Text(
@@ -359,52 +351,66 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   // FutureBuilder untuk menampilkan berita
-                  // ... (Kode Berita tidak berubah)
                   FutureBuilder<List<News>>(
-                    future: _futureNews,
+                    future: _futureNews,   // 🔗 Future berita yang akan ditampilkan
                     builder: (context, snapshot) {
+
+                      // ⏳ Tampilkan loading saat data masih diambil
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
-                      } else if (snapshot.hasError) {
-                        return Text('⚠️ ${snapshot.error}');
-                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const Text('Tidak ada berita ditemukan.');
-                      } else {
-                        final newsList = snapshot.data!;
-                        // Ambil 3 berita teratas
-                        return Column(
-                          children: newsList.take(3).map((news) {
-                            return Card(
-                              color: const Color(0xFF001845),
-                              margin: const EdgeInsets.symmetric(vertical: 6),
-                              child: ListTile(
-                                leading: news.imageLink != null
-                                // Tampilkan gambar berita jika ada
-                                    ? Image.network(
-                                  news.imageLink!,
-                                  width: 60,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(Icons.broken_image, size: 60);
-                                  },
-                                )
-                                // Jika tidak ada gambar
-                                    : const Icon(Icons.article_outlined),
-                                textColor: Colors.white,
-                                title: Text(news.titleNews ?? '(Tanpa Judul)'),
-                                subtitle: Text(news.source),
-
-                                // Klik untuk buka halaman detail berita
-                                onTap: () {
-                                  Navigator.pushNamed(context, '/news_detail', arguments: news);
-                                },
-                              ),
-                            );
-                          }).toList(),
-                        );
                       }
+
+                      // ❌ Jika error saat fetch API
+                      else if (snapshot.hasError) {
+                        return Text('⚠️ ${snapshot.error}');
+                      }
+
+                      // 📭 Jika API berhasil tapi tidak ada data
+                      else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Text('Tidak ada berita ditemukan.');
+                      }
+
+                      // 🎉 Jika data tersedia → tampilkan 3 berita teratas
+                      final newsList = snapshot.data!;
+
+                      return Column(
+                        children: newsList.take(3).map((news) {
+                          return Card(
+                            color: const Color(0xFF001845),
+
+                            child: ListTile(
+                              // 🖼 Tampilkan gambar berita jika tersedia
+                              leading: news.imageLink != null
+                                  ? Image.network(
+                                news.imageLink!,
+                                width: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.broken_image, size: 60);
+                                },
+                              )
+                                  : const Icon(Icons.article_outlined),
+
+                              title: Text(
+                                news.titleNews ?? '(Tanpa Judul)',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                              subtitle: Text(
+                                news.source,
+                                style: const TextStyle(color: Colors.white70), // putih sedikit transparan
+                              ),
+
+                              // 🔗 Klik → buka halaman detail berita
+                              onTap: () {
+                                Navigator.pushNamed(context, '/news_detail', arguments: news);
+                              },
+                            ),
+                          );
+                        }).toList(),
+                      );
                     },
                   ),
+
                   const SizedBox(height: 12),
 
                   // --- Judul Grid ---
@@ -452,7 +458,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ===== Custom Big Card (Untuk Carousel/Slider) =====
-  // ... (Kode buildBigCard tidak berubah)
   Widget buildBigCard(List<String> imagePaths) {
     return Container(
       height: 230,
@@ -519,7 +524,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ===== Widget Kartu Menu Grid (Stateless) =====
-  // ... (Kode buildMenuCard tidak berubah)
   Widget buildMenuCard(String title, String imagePath, String routeName) {
     return GestureDetector(
       onTap: () {
@@ -588,7 +592,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ===== Widget Item Drawer (Menu Samping) =====
-  // ... (Kode buildDrawerItem tidak berubah)
   Widget buildDrawerItem(String title, String routeName) {
     bool isActive = title == "Home";
 
@@ -626,17 +629,19 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ===== Widget Kartu Cuaca (Weather Card) =====
-  Widget buildWeatherCard() {
+
+  Widget buildWeatherSectionCombined() {
     return FutureBuilder<Weather>(
       future: _futureWeather,
-      builder: (context, snapshot) {
-        // 1. Loading State
-        if (snapshot.connectionState == ConnectionState.waiting) {
+      builder: (context, weatherSnapshot) {
+
+        // ---- 1. WEATHER LOADING ----
+        if (weatherSnapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: LinearProgressIndicator());
         }
 
-        // 2. Error State
-        else if (snapshot.hasError) {
+        // ---- 2. WEATHER ERROR ----
+        if (weatherSnapshot.hasError) {
           return Card(
             color: const Color(0xFFffb5a7),
             elevation: 2,
@@ -644,205 +649,223 @@ class _HomePageState extends State<HomePage> {
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
-                'Gagal memuat cuaca: ${snapshot.error}',
+                'Gagal memuat cuaca: ${weatherSnapshot.error}',
                 style: const TextStyle(color: Color(0xFF6d0000)),
               ),
             ),
           );
         }
 
-        // 3. Data Loaded
-        else if (snapshot.hasData) {
-          final weather = snapshot.data!;
-
-          return Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF3d5a80), // Warna biru tua
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 5,
-                ),
-              ],
-            ),
-            margin: const EdgeInsets.symmetric(vertical: 10),
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Nama Kota & Suhu
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '📍 ${weather.cityName}',
-                          style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          '${weather.temperature.toStringAsFixed(1)}°C',
-                          style: const TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.w300,
-                              color: Colors.white),
-                        ),
-                      ],
-                    ),
-
-                    // Ikon Cuaca
-                    weather.iconUrl.isNotEmpty
-                        ? Image.network(
-                      weather.iconUrl,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.wb_sunny, size: 60, color: Colors.yellow);
-                      },
-                    )
-                        : const Icon(Icons.wb_sunny, size: 60, color: Colors.yellow),
-                  ],
-                ),
-
-                const SizedBox(height: 15),
-
-                // Detail Cuaca
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Deskripsi
-                    Text(
-                      weather.description.toUpperCase(),
-                      style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.bold
-                      ),
-                    ),
-
-                    // Kelembaban & Angin
-                    Row(
-                      children: [
-                        const Icon(Icons.water_drop, size: 18, color: Colors.lightBlueAccent),
-                        const SizedBox(width: 4),
-                        Text('${weather.humidity}%', style: const TextStyle(color: Colors.white)),
-                        const SizedBox(width: 12),
-                        const Icon(Icons.air, size: 18, color: Colors.white),
-                        const SizedBox(width: 4),
-                        Text('${weather.windSpeed.toStringAsFixed(1)} m/s', style: const TextStyle(color: Colors.white)),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        }
-
-        // 4. No Data
-        else {
+        // ---- 3. WEATHER OK ----
+        if (!weatherSnapshot.hasData) {
           return const SizedBox.shrink();
         }
-      },
-    );
-  }
 
+        final weather = weatherSnapshot.data!;
 
-  // =========================================================
-  // 3. TAMBAH WIDGET BARU: buildHorizontalForecast()
-  // =========================================================
-  Widget buildHorizontalForecast() {
-    return FutureBuilder<List<Forecast>>(
-      future: _futureForecast,
-      builder: (context, snapshot) {
-        // 1. Loading State
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          // Menggunakan LinearProgressIndicator yang lebih kecil untuk horizontal list
-          return const Center(child: SizedBox(
-            height: 10,
-            child: LinearProgressIndicator(
-              color: Color(0xFF001845),
-            ),
-          ));
-        }
+        return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF3d5a80),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                spreadRadius: 1,
+                blurRadius: 6,
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(20),
+          margin: const EdgeInsets.symmetric(vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
 
-        // 2. Error State
-        else if (snapshot.hasError) {
-          return Text('⚠️ Gagal memuat prakiraan: ${snapshot.error}',
-              style: const TextStyle(color: Color(0xFF001845)));
-        }
-
-        // 3. Data Loaded
-        else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-          final forecastList = snapshot.data!;
-          // Ambil 8 item pertama (biasanya mewakili ~24 jam)
-          final relevantForecasts = forecastList.take(8).toList();
-
-          return SizedBox(
-            height: 100, // Tinggi yang sesuai untuk kartu horizontal kecil
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal, // 👈 Kunci untuk horizontal
-              itemCount: relevantForecasts.length,
-              itemBuilder: (context, index) {
-                final forecast = relevantForecasts[index];
-                // Format waktu: hanya jam (misal 01:00)
-                final time = '${forecast.date.toLocal().hour.toString().padLeft(2, '0')}:00';
-
-                // Widget Kartu Prakiraan Tunggal
-                return Container(
-                  width: 65, // Lebar kartu
-                  margin: EdgeInsets.only(right: index == relevantForecasts.length - 1 ? 0 : 10), // Margin kanan kecuali yang terakhir
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF3d5a80).withOpacity(0.85), // Warna biru gelap
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+              // ==========================
+              //   BAGIAN WEATHER (ATAS)
+              // ==========================
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Kota + Suhu
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 1. Waktu
                       Text(
-                        time,
-                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        '📍 ${weather.cityName}',
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-
-                      // 2. Ikon Cuaca
-                      Image.network(
-                        'https://openweathermap.org/img/wn/${forecast.iconCode}@2x.png',
-                        width: 35,
-                        height: 35,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(Icons.cloud, size: 35, color: Colors.white);
-                        },
-                      ),
-
-                      // 3. Suhu
+                      const SizedBox(height: 5),
                       Text(
-                        '${forecast.temperature.toStringAsFixed(0)}°',
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        '${weather.temperature.toStringAsFixed(1)}°C',
+                        style: const TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
-                );
-              },
-            ),
-          );
-        }
 
-        // 4. No Data
-        else {
-          return const SizedBox.shrink();
-        }
+                  // Ikon cuaca
+                  weather.iconUrl.isNotEmpty
+                      ? Image.network(
+                    weather.iconUrl,
+                    width: 80,
+                    height: 80,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.wb_sunny,
+                          size: 60, color: Colors.yellow);
+                    },
+                  )
+                      : const Icon(Icons.wb_sunny,
+                      size: 60, color: Colors.yellow),
+                ],
+              ),
+
+              const SizedBox(height: 15),
+
+              // Detail
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    weather.description.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.water_drop,
+                          size: 18, color: Colors.lightBlueAccent),
+                      const SizedBox(width: 4),
+                      Text('${weather.humidity}%',
+                          style: const TextStyle(color: Colors.white)),
+                      const SizedBox(width: 12),
+                      const Icon(Icons.air, size: 18, color: Colors.white),
+                      const SizedBox(width: 4),
+                      Text('${weather.windSpeed.toStringAsFixed(1)} m/s',
+                          style: const TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // ================================
+              //   BAGIAN FORECAST (BAWAH)
+              // ================================
+              FutureBuilder<List<Forecast>>(
+                future: _futureForecast,
+                builder: (context, forecastSnapshot) {
+                  if (forecastSnapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const SizedBox(
+                      height: 10,
+                      child: LinearProgressIndicator(
+                        color: Color(0xFF001845),
+                      ),
+                    );
+                  }
+
+                  if (forecastSnapshot.hasError) {
+                    return Text(
+                      '⚠️ Gagal memuat prakiraan: ${forecastSnapshot.error}',
+                      style: const TextStyle(color: Colors.white70),
+                    );
+                  }
+
+                  if (!forecastSnapshot.hasData ||
+                      forecastSnapshot.data!.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  // 🎉 Forecast tersedia (ambi hanya 8 data teratas)
+                  final forecasts = forecastSnapshot.data!.take(10).toList();
+
+                  return SizedBox(
+                    height: 110,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: forecasts.length,
+                      itemBuilder: (context, index) {
+                        final f = forecasts[index];
+                        final time = '${f.date.hour.toString().padLeft(2, '0')}:00';
+                        final dateText =
+                            '${f.date.day.toString().padLeft(2, '0')}/${f.date.month.toString().padLeft(2, '0')}';
+
+                        return Container(
+                          width: 65,
+                          margin: EdgeInsets.only(
+                            right: index == forecasts.length - 1 ? 0 : 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF415a77),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              // 🗓 Tanggal
+                              Text(
+                                dateText,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              // Jam
+                              Text(
+                                time,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                ),
+                              ),
+
+                              // Icon Forecast
+                              Image.network(
+                                'https://openweathermap.org/img/wn/${f.iconCode}@2x.png',
+                                width: 35,
+                                height: 35,
+                                errorBuilder: (c, e, s) =>
+                                const Icon(Icons.cloud, size: 35, color: Colors.white),
+                              ),
+
+                              // Suhu
+                              Text(
+                                '${f.temperature.toStringAsFixed(0)}°',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+
+                      },
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
       },
     );
   }
+
 }

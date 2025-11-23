@@ -181,6 +181,7 @@ class _Pph2529CalculatorState extends State<Pph2529Calculator> {
             buildDrawerItem("Ppn", '/ppn'),
             buildDrawerItem("PBB", '/pbb'),
             buildDrawerItem("History", '/history'),
+            buildDrawerItem("News", '/news'),
             buildDrawerItem("Guide", '/guide'),
             buildDrawerItem("Logout", '/login'),
           ],

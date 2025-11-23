@@ -163,6 +163,7 @@ class Rules extends StatelessWidget {
             buildDrawerItem(context, "Ppn", '/ppn'),
             buildDrawerItem(context, "PBB", '/pbb'),
             buildDrawerItem(context, "History", '/history'),
+            buildDrawerItem(context, "News", '/news'),
             buildDrawerItem(context, "Guide", '/guide'),
             buildDrawerItem(context, "Logout", '/login'),
           ],

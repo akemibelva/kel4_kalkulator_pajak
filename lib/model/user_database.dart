@@ -21,7 +21,7 @@ class User extends HiveObject {
   User({
     required this.username, // Username wajib diisi
     required this.password, // Password wajib diisi
-    required this.gender,
-    required this.dateOfBirth,
+    required this.gender, // gender wajib diisi
+    required this.dateOfBirth, // tanggal lahir wajib diisi
   });
 }

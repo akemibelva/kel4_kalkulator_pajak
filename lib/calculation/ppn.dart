@@ -135,6 +135,7 @@ class _PpnCalculatorState extends State<PpnCalculator> {
             buildDrawerItem("Ppn", '/ppn'),
             buildDrawerItem("PBB", '/pbb'),
             buildDrawerItem("History", '/history'),
+            buildDrawerItem("News", '/news'),
             buildDrawerItem("Guide", '/guide'),
             buildDrawerItem("Logout", '/login'),
           ],

@@ -153,6 +153,7 @@ class _Pph23CalculatorState extends State<Pph23Calculator> {
             buildDrawerItem("Ppn", '/ppn'),
             buildDrawerItem("PBB", '/pbb'),
             buildDrawerItem("History", '/history'),
+            buildDrawerItem("News", '/news'),
             buildDrawerItem("Guide", '/guide'),
             buildDrawerItem("Logout", '/login'),
           ],

@@ -8,8 +8,8 @@ class UserService {
   static late Box<User> _userBoxInstance; // Instance Hive untuk user
   static late Box _appSettings; // Instance Hive untuk settings
 
-  /// 🔹 Inisialisasi Hive box
-  /// Bisa langsung dipanggil dari main.dart: await AuthService.init();
+  // Inisialisasi Hive box
+  // Bisa langsung dipanggil dari main.dart: await AuthService.init();
   static Future<void> init() async {
     await Hive.initFlutter(); // Inisialisasi Hive untuk Flutter
 
@@ -37,7 +37,7 @@ class UserService {
 
   // --- Fungsi Authentication ---
 
-  /// Simpan status login di box settings, sekaligus menyimpan username yang aktif.
+  // Simpan status login di box settings, sekaligus menyimpan username yang aktif.
   static Future<void> setLoginStatus(bool isLoggedIn, {String? username}) async {
     await _appSettings.put('isLoggedIn', isLoggedIn);
 
@@ -51,18 +51,18 @@ class UserService {
     }
   }
 
-  /// Ambil status login dari box settings
+  // Ambil status login dari box settings
   static bool getLoginStatus() {
     return _appSettings.get('isLoggedIn') ?? false; // default false jika belum ada
   }
 
-  /// Ambil username yang sedang login (PENTING untuk HistoryService)
+  // Ambil username yang sedang login (PENTING untuk HistoryService)
   static String? getCurrentUsername() {
     return _appSettings.get('currentUsername');
   }
 
-  /// Registrasi user baru
-  /// Disesuaikan untuk menerima gender dan dateOfBirth
+  // Registrasi user baru
+  // Disesuaikan untuk menerima gender dan dateOfBirth
   static Future<bool> registerUser(
       String username,
       String password,
@@ -88,7 +88,7 @@ class UserService {
     return true;
   }
 
-  /// Login user
+  // Login user
   static bool loginUser(String username, String password) {
     final user = _userBoxInstance.values.firstWhere(
           (user) => user.username == username && user.password == password,
@@ -109,7 +109,7 @@ class UserService {
     return false;
   }
 
-  /// Logout user
+  // Logout user
   static Future<void> logoutUser() async {
     // Panggil fungsi baru dengan isLoggedIn=false dan username=null
     await setLoginStatus(false, username: null);

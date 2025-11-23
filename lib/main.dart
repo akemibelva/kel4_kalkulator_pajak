@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kalkulator_pajak/detail_screen/news_screen.dart';
 // Import Halaman-halaman Kalkulator
 import 'calculation/pbb.dart';
 import 'calculation/pph.dart';
@@ -20,7 +21,6 @@ import 'calculation/history.dart';
 import 'detail_screen/news_detail_screen.dart';
 // Import Model
 import 'package:kalkulator_pajak/model/hasil_tax.dart'; // TaxResult
-import 'package:kalkulator_pajak/model/user_database.dart';
 import 'model/news_api_model.dart';
 //import service
 import 'service/user_service.dart';
@@ -28,11 +28,17 @@ import 'service/user_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Pastikan Flutter siap sebelum async
-  await UserService.init(); // Inisialisasi Hive (database lokal)
+  await Hive.initFlutter(); // Inisialisasi Hive (database lokal)
+
+  // dua file ini akan dijalankan ketika ada data dari hive yang null, sehingga tidak bisa jalan nanti
+  // biasanya error ketika setelah dijalankan di websit, lalu dijalankan di avd tidak bisa
+  //await Hive.deleteBoxFromDisk('user_box');
+  //await Hive.deleteBoxFromDisk('userBox');
+
 
 
   // Buka semua box Hive sebelum menjalankan app
-  await Hive.openBox<User>('user_box'); // Box untuk data user
+  await UserService.init(); // Box untuk data user
   await Hive.openBox('app_settings_box'); // Box untuk data setting
 
   // Memuat file .env yang berisi variabel lingkungan (environment variables)
@@ -90,6 +96,7 @@ class MyApp extends StatelessWidget {
         '/guide': (context) => const Rules(),
         '/splash': (context) => const SplashScreen(),
         '/history': (context) => const History(),
+        '/news': (context) => const NewsScreen()
       },
 
       // --- 2. Rute Dinamis (Menerima Argumen, khususnya TaxResult dari History) ---
