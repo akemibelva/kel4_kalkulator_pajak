@@ -11,11 +11,14 @@ Fitur Utama (wajib)
 
 ## Penyajian Proyek
 Fitur Utama Proyek ini 
-1. Autentikasi (Simulasi): Pengguna dapat melakukan Login dan Register untuk menyimpan sesi. Manajemen akun disimulasikan secara lokal (in-memory) melalui kelas UserList.
+1. Autentikasi (Simulasi): Pengguna dapat melakukan Login dan Register. Data akun dan sesi disimpan secara aman dan persisten menggunakan Hive Database.
 2. Navigasi Intuitif: Dilengkapi dengan Drawer menu lengkap, Auto-scroll carousel di homepage, dan Autocomplete Search untuk memudahkan pencarian kalkulator.
 3. Perhitungan Pajak Akurat: Mencakup 7 jenis kalkulasi yang disesuaikan dengan regulasi terbaru UU HPP (termasuk tarif PPh Badan 22%, lapisan PPh 21 baru, dan pembebasan PPh UMKM Rp500 Juta).
-4. Riwayat Perhitungan: Semua hasil perhitungan disimpan ke local storage (SharedPreferences). Pengguna dapat melihat riwayat, menghapusnya, atau menavigasi kembali ke kalkulator yang relevan dengan data input lama.
+4. Riwayat Perhitungan: Semua hasil perhitungan disimpan secara lokal menggunakn Hive. Pengguna dapat melihat riwayat, menghapusnya, atau menavigasi kembali ke kalkulator yang relevan dengan data input lama.
 5. Edukasi Pajak: Halaman Panduan (Rules) menyediakan tips praktis dan penjelasan regulasi pajak utama dalam format yang mudah dibaca.
+6. Integrasi Layanan Eksternal Application Programming Interface (API): Aplikasi ini terintegrasi dengan layanan API pihak ketiga, antara lain;
+   - Prakiraan Cuaca Real-time (OpenWeatherMap API): Mengambil data cuaca terkini dan prakiraan per jam berdasarkan lokasi pengguna (default: Jakarta). Membantu pengguna merencanakan aktivitas bisnis dengan mengetahui kondisi cuaca.
+   - Berita Ekonomi & Pajak (NewsAPI): Melakukan *fetching* berita terbaru (Top Headlines) seputar bisnis dan ekonomi di Indonesia. Memastikan pengguna tetap *up-to-date* dengan regulasi atau tren ekonomi terkini langsung dari dashboard aplikasi.
 
 ### File dart dan class yang terdapat dalam proyek:
 ### A. Lapisan Model dan Logika Service (Inti Data Aplikasi)
@@ -26,8 +29,8 @@ Bagian ini berfokus pada struktur data, aturan bisnis, dan manajemen penyimpanan
    - Sistem tarif PPh 21 Progresif 5 Lapisan.
    - Logika PPh Final UMKM yang menghitung pembebasan pajak Rp500 Juta untuk WP Orang Pribadi.
 2. TaxResult (hasil_tax.dart): Berfungsi sebagai model data untuk satu entri riwayat. Strukturnya mencakup id unik, taxType, finalResult, dan inputDetails (Map yang menyimpan semua input pengguna). Ini menyediakan metode toMap() dan fromMap() untuk penyimpanan data.
-3. SaveHistory (save_history.dart): Kelas service yang mengelola penyimpanan riwayat perhitungan ke SharedPreferences. Fitur utamanya mencakup penyimpanan data baru di awal (latest first), pengambilan semua riwayat, dan fungsi untuk menghapus seluruh riwayat sekaligus.
-4. User (user.dart) dan UserList (user_list.dart): File-file ini menyajikan simulasi sistem autentikasi. UserList.dart adalah service yang menyediakan fungsi login(), register(), dan logout() dengan data pengguna disimpan secara in-memory.
+3. SaveHistory (save_history.dart): Service untuk menyimpan dan memuat riwayat kalkulasi dari database lokal. Fitur utamanya mencakup penyimpanan data baru di awal (latest first), pengambilan semua riwayat, dan fungsi untuk menghapus seluruh riwayat sekaligus. Menggunakan SharedPreferences dengan mekanisme filtering berbasis username agar data riwayat antar pengguna tidak tercampur.
+4. User (user_database.dart) dan UserService (user_service.dart): Mengelola logika autentikasi (Login/Register) dan penyimpanan data pengguna menggunakan Hive Box.
 
 ### B. Halaman Kalkulator (Implementasi Logika Bisnis)
 Setiap kalkulator adalah view yang berinteraksi langsung dengan TaxLogic dan SaveHistory.
@@ -66,8 +69,11 @@ Bagian ini bertanggung jawab atas antarmuka pengguna, navigasi, dan tema visual.
 
 6. TaxConstantBox (tax_constant_box.dart): Komponen UI yang dapat digunakan kembali untuk menyorot konstanta pajak di halaman kalkulator, meningkatkan transparansi dan edukasi pengguna.
 
+### D. Konfigurasi & Aset
+Dalam menjalankan program, terdapat file konfigurasi `.env` untuk menyimpan kredensial API (Weather API Key & News API Key). Wajib dibuat sebelum menjalankan aplikasi.
+
 # Alur Menjalankan Aplikasi
-Setelah mengunduh dan ekstrak zip file, jalankan sesuai alur penggunaan aplikasi berikut:
+Setelah mengunduh dan ekstrak zip file, jalankan sesuai alur penggunaan aplikasi berikut. Pastikan sebelum menggunakan, file `.env` sudah ada di folder root dan mengandung API Key (Weather & News) agar fitur Home berjalan normal. Lalu jalankan `flutter pub get` dan `flutter run`.
 1. Lakukan registrasi: Masukkan nama, password, dan kondirmasi password untuk membuat akun baru.
 2. Lakukan login: Setelah berhasil daftar, masuk dengan menggunakan akun yang sudah dibuat.
 3. Mengakses melalui menu atau klik opsi yang terdapat pada halaman utama untuk mengakses fitur kalkulator.
