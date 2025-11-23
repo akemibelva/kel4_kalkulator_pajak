@@ -18,7 +18,7 @@ Fitur Utama Proyek ini
 5. Edukasi Pajak: Halaman Panduan (Rules) menyediakan tips praktis dan penjelasan regulasi pajak utama dalam format yang mudah dibaca.
 6. Integrasi Layanan Eksternal Application Programming Interface (API): Aplikasi ini terintegrasi dengan layanan API pihak ketiga, antara lain;
    - Prakiraan Cuaca Real-time (OpenWeatherMap API): Mengambil data cuaca terkini dan prakiraan per jam berdasarkan lokasi pengguna (default: Jakarta). Membantu pengguna merencanakan aktivitas bisnis dengan mengetahui kondisi cuaca.
-   - Berita Ekonomi & Pajak (NewsAPI): Melakukan *fetching* berita terbaru (Top Headlines) seputar bisnis dan ekonomi di seluruh dunia. Memastikan pengguna tetap *up-to-date* dengan regulasi atau tren ekonomi terkini langsung dari dashboard aplikasi.
+   - Berita Ekonomi & Pajak (NewsAPI): Melakukan *fetching* berita terbaru (Top Headlines) seputar bisnis dan ekonomi dari sumber berita di Indonesia yang membahasa berita dari seluruh dunia. Memastikan pengguna tetap *up-to-date* dengan regulasi atau tren ekonomi terkini langsung dari dashboard aplikasi.
 
 ### File dart dan class yang terdapat dalam proyek:
 ### A. Lapisan Model dan Logika Service (Inti Data Aplikasi)
