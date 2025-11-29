@@ -11,14 +11,14 @@ Fitur Utama (wajib)
 
 ## Penyajian Proyek
 Fitur Utama Proyek ini 
-1. Autentikasi (Simulasi): Pengguna dapat melakukan Login dan Register. Data akun dan sesi disimpan secara aman dan persisten menggunakan Hive Database.
+1. Autentikasi dan Pemisahan Data Pengguna: Manajemen akun seperti Login dan Register diimplementasikan secara persistent menggunakan Hive Database. Data riwayat perhitungan (History) dipisahkan per-pengguna menggunakan SharedPreferences untuk memastikan riwayat tidak tercampur antar pengguna.
 2. Navigasi Intuitif: Dilengkapi dengan Drawer menu lengkap, Auto-scroll carousel di homepage, dan Autocomplete Search untuk memudahkan pencarian kalkulator.
 3. Perhitungan Pajak Akurat: Mencakup 7 jenis kalkulasi yang disesuaikan dengan regulasi terbaru UU HPP (termasuk tarif PPh Badan 22%, lapisan PPh 21 baru, dan pembebasan PPh UMKM Rp500 Juta).
-4. Riwayat Perhitungan: Semua hasil perhitungan disimpan secara lokal menggunakn Hive. Pengguna dapat melihat riwayat, menghapusnya, atau menavigasi kembali ke kalkulator yang relevan dengan data input lama.
+4. Riwayat Perhitungan: Semua hasil perhitungan disimpan secara lokal menggunakan Hive. Pengguna dapat melihat riwayat, menghapusnya, atau menavigasi kembali ke kalkulator yang relevan dengan data input lama.
 5. Edukasi Pajak: Halaman Panduan (Rules) menyediakan tips praktis dan penjelasan regulasi pajak utama dalam format yang mudah dibaca.
 6. Integrasi Layanan Eksternal Application Programming Interface (API): Aplikasi ini terintegrasi dengan layanan API pihak ketiga, antara lain;
    - Prakiraan Cuaca Real-time (OpenWeatherMap API): Mengambil data cuaca terkini dan prakiraan per jam berdasarkan lokasi pengguna (default: Jakarta). Membantu pengguna merencanakan aktivitas bisnis dengan mengetahui kondisi cuaca.
-   - Berita Ekonomi & Pajak (NewsAPI): Melakukan *fetching* berita terbaru (Top Headlines) seputar bisnis dan ekonomi di Indonesia. Memastikan pengguna tetap *up-to-date* dengan regulasi atau tren ekonomi terkini langsung dari dashboard aplikasi.
+   - Berita Ekonomi & Pajak (NewsAPI): Melakukan *fetching* berita terbaru (Top Headlines) seputar bisnis dan ekonomi dari sumber berita di Indonesia yang membahasa berita dari seluruh dunia. Memastikan pengguna tetap *up-to-date* dengan regulasi atau tren ekonomi terkini langsung dari dashboard aplikasi.
 
 ### File dart dan class yang terdapat dalam proyek:
 ### A. Lapisan Model dan Logika Service (Inti Data Aplikasi)
@@ -70,14 +70,14 @@ Bagian ini bertanggung jawab atas antarmuka pengguna, navigasi, dan tema visual.
 6. TaxConstantBox (tax_constant_box.dart): Komponen UI yang dapat digunakan kembali untuk menyorot konstanta pajak di halaman kalkulator, meningkatkan transparansi dan edukasi pengguna.
 
 ### D. Konfigurasi & Aset
-Dalam menjalankan program, terdapat file konfigurasi `.env` untuk menyimpan kredensial API (Weather API Key & News API Key). Wajib dibuat sebelum menjalankan aplikasi.
+Dalam menjalankan program, harus membuat file konfigurasi .env untuk menyimpan kredensial API (Weather API Key & News API Key), di mana API_KEY diperoleh dari web tempat API tersebut berada. File ini bersifat rahasia dan wajib dibuat agar aplikasi berjalan.
 
 # Alur Menjalankan Aplikasi
-Setelah mengunduh dan ekstrak zip file, jalankan sesuai alur penggunaan aplikasi berikut. Pastikan sebelum menggunakan, file `.env` sudah ada di folder root dan mengandung API Key (Weather & News) agar fitur Home berjalan normal. Lalu jalankan `flutter pub get` dan `flutter run`.
-1. Lakukan registrasi: Masukkan nama, password, dan kondirmasi password untuk membuat akun baru.
+Setelah mengunduh dan ekstrak zip file, jalankan sesuai alur penggunaan aplikasi berikut. Sesuai poin D sebelumnya, buat terlebih dahulu file .env di folder root, lalu jalankan flutter pub get dan flutter run.
+1. Lakukan registrasi: Masukkan nama, password, dan konfirmasi password untuk membuat akun baru.
 2. Lakukan login: Setelah berhasil daftar, masuk dengan menggunakan akun yang sudah dibuat.
 3. Mengakses melalui menu atau klik opsi yang terdapat pada halaman utama untuk mengakses fitur kalkulator.
-4. Pilih jenis pajak yang ingin dihitung: Setiap jenis pajak yang dipilih, masing-masing terdapat form input dan penjelasan panduan? di bagian bawahnya.
+4. Pilih jenis pajak yang ingin dihitung: Setiap jenis pajak yang dipilih, masing-masing terdapat form input dan penjelasan panduan di bagian bawahnya.
 6. Lakukan pengisian data jika memilih PPh 21 dan klik tombol "Hitung PPh 21" 
 7. Melihat riwayat semua perhitungan kalkulator: Cek di bagian history. Di dalam history terdapat seluruh riwayat perhitungan kalkulasi pajak. Di dalam history ini pun ada fitur clear yang berada di atas kanan, berfungsi untuk menghapus seluruh riwayat perhitungan.
 8. Tersedia "search" untuk mencari nama pajak kalkulator yang tersedia. 
