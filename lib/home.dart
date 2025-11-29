@@ -54,6 +54,7 @@ class _HomePageState extends State<HomePage> {
     {'title': 'Ppn', 'route': '/ppn'},
     {'title': 'PBB', 'route': '/pbb'},
     {'title': 'UMKM', 'route': '/umkm'},
+    {'title': 'News', 'route': '/news'},
     {'title': 'Guide & Tips', 'route': '/guide'},
   ];
 
